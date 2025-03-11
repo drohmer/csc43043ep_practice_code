@@ -65,9 +65,11 @@ add_definitions(-DCGP_OPENGL_3_3)   # for OpenGL 3.3
 add_executable(${executable_name} ${src_files_cgp} ${src_files_third_party} ${src_files})
 
 
-# Set Compiler for Unix system
+# Set Compiler for Unix system (and Emscripten cross-compilation)
 if(UNIX)
-   set(CMAKE_CXX_COMPILER g++)                      # Can switch to clang++ if prefered
+   if (NOT EMSCRIPTEN)
+      set(CMAKE_CXX_COMPILER g++) # Can switch to clang++ if prefered (emscripten always uses clang)
+   endif()
    add_definitions(-g -O2 -std=c++14 -Wall -Wextra -Wfatal-errors -Wno-pragmas -Wno-unknown-warning-option) # Can adapt compiler flags if needed
    add_definitions(-Wno-sign-compare -Wno-type-limits) # Remove some warnings
 endif()
@@ -98,3 +100,15 @@ if(UNIX)
    target_link_libraries(${executable_name} dl) #dlopen is required by Glad on Unix
 endif()
 
+
+# Link options for Emscripten cross-compilation
+if(EMSCRIPTEN)
+   target_link_options(${executable_name} PRIVATE
+      -sMAX_WEBGL_VERSION=2
+      -sALLOW_MEMORY_GROWTH=1
+      "--preload-file=${CMAKE_CURRENT_SOURCE_DIR}/shaders@shaders"
+      "--preload-file=${CMAKE_CURRENT_SOURCE_DIR}/assets@assets"
+   )
+   # Set the extension to .html, otherwise it generates only a .wasm and .js
+   set_target_properties(${executable_name} PROPERTIES SUFFIX ".html")
+endif()
